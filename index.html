@@ -3,191 +3,347 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Teacher Portal</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-</head>
-<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col justify-between">
-
-    <script>
-        // Paste your Google Apps Script Web App URL here
-        const API_URL = "YOUR_APPS_SCRIPT_WEB_APP_URL";
-        
-        let currentTeacher = { id: "", name: "" };
-
-        function getTodayDate() {
-            return new Date().toISOString().split('T')[0];
+    <title>School Student Portal</title>
+    <style>
+        :root {
+            --primary: #1e3a8a;
+            --secondary: #3b82f6;
+            --bg: #f3f4f6;
+            --card-bg: #ffffff;
+            --text: #1f2937;
+            --success: #10b981;
+            --warning: #f59e0b;
         }
-    </script>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg); color: var(--text); padding: 20px; }
+        
+        /* Containers */
+        .container { max-width: 1000px; margin: 0 auto; }
+        .card { background: var(--card-bg); padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        
+        /* Auth Screen */
+        #auth-screen { max-width: 400px; margin: 100px auto; text-align: center; }
+        #auth-screen h2 { color: var(--primary); margin-bottom: 20px; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #d1d5db; border-radius: 6px; font-size: 16px; }
+        button { width: 100%; background: var(--primary); color: white; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; transition: background 0.2s; }
+        button:hover { background: var(--secondary); }
+        
+        /* Dashboard Screen */
+        #dashboard { display: none; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--bg); padding-bottom: 15px; margin-bottom: 20px; }
+        .header h1 { color: var(--primary); font-size: 24px; }
+        .logout-btn { background: #ef4444; width: auto; padding: 8px 16px; }
+        .logout-btn:hover { background: #dc2626; }
+        
+        /* Profile Grid Summary */
+        .profile-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px; }
+        .summary-box { background: var(--bg); padding: 15px; border-radius: 8px; text-align: center; border-left: 4px solid var(--primary); }
+        .summary-box h4 { color: #6b7280; font-size: 12px; text-transform: uppercase; }
+        .summary-box p { font-size: 18px; font-weight: bold; margin-top: 5px; color: var(--primary); }
 
-    <!-- LOGIN SCREEN -->
-    <div id="login-screen" class="max-w-md w-full mx-auto my-auto p-6 bg-white rounded-xl shadow-md border border-slate-200">
-        <h2 class="text-2xl font-bold text-center text-indigo-600 mb-6">Teacher Portal Login</h2>
-        <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
-            <div>
-                <label class="block text-sm font-semibold mb-1">Teacher ID</label>
-                <input type="text" id="username" required class="w-full p-2 border border-slate-300 rounded focus:ring-2 focus:ring-indigo-400 outline-none">
-            </div>
-            <div>
-                <label class="block text-sm font-semibold mb-1">Password</label>
-                <input type="password" id="password" required class="w-full p-2 border border-slate-300 rounded focus:ring-2 focus:ring-indigo-400 outline-none">
-            </div>
-            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 rounded transition">Log In</button>
-            <p id="login-error" class="text-red-500 text-sm text-center hidden"></p>
-        </form>
-    </div>
+        /* Tables layout */
+        h3 { color: var(--primary); margin-bottom: 15px; font-size: 18px; border-left: 4px solid var(--secondary); padding-left: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 15px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }
+        th { background-color: #f9fafb; color: #4b5563; font-weight: 600; }
+        
+        /* Grid system for blocks */
+        .dashboard-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+        @media (min-width: 768px) {
+            .dashboard-grid { grid-template-columns: 1fr 1fr; }
+        }
+        
+        /* Badges */
+        .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+        .badge.paid { background: #d1fae5; color: #065f46; }
+        .badge.pending { background: #fef3c7; color: #92400e; }
+        .badge.completed { background: #d1fae5; color: #065f46; }
 
-    <!-- MAIN PORTAL SCREEN (Hidden by default) -->
-    <div id="portal-screen" class="max-w-3xl w-full mx-auto p-4 md:p-6 bg-white shadow-lg rounded-xl my-6 border border-slate-100 hidden">
-        <header class="flex justify-between items-center border-b border-slate-200 pb-4 mb-6">
-            <div>
-                <h1 class="text-xl font-bold text-slate-900">Welcome, <span id="teacher-name-display" class="text-indigo-600">Teacher</span></h1>
-                <p class="text-sm text-slate-500">ID: <span id="teacher-id-display"></span></p>
-            </div>
-            <button onclick="logout()" class="text-sm bg-slate-200 hover:bg-slate-300 px-3 py-1.5 rounded font-medium transition">Logout</button>
-        </header>
+        /* Action Communication Section */
+        .action-container { display: grid; grid-template-columns: 1fr; gap: 15px; }
+        @media (min-width: 600px) { .action-container { grid-template-columns: 1fr 1fr; } }
+        .action-card { background: #f9fafb; padding: 15px; border-radius: 8px; border: 1px solid #e5e7eb; }
+        .btn-group { display: flex; gap: 10px; margin-top: 10px; }
+        .btn-wa { background: #25d366; } .btn-wa:hover { background: #20ba5a; }
+        .btn-mail { background: #ea4335; } .btn-mail:hover { background: #d3382c; }
+        textarea { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #d1d5db; resize: none; margin-top: 5px; font-size: 14px; }
+    </style>
+</head>
+<body>
 
-        <!-- SECTION 1: ATTENDANCE (ARRIVAL / LEAVING) -->
-        <section class="mb-8 p-4 bg-indigo-50/50 rounded-lg border border-indigo-100">
-            <h3 class="text-lg font-bold text-indigo-900 mb-3">Shift Attendance</h3>
-            <div class="flex gap-4">
-                <button onclick="submitShiftAttendance('Arrival')" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 rounded transition shadow-sm">
-                    Mark Arrival (Punch In)
-                </button>
-                <button onclick="submitShiftAttendance('Leaving')" class="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-medium py-2.5 rounded transition shadow-sm">
-                    Mark Leaving (Punch Out)
-                </button>
-            </div>
-        </section>
+    <div class="container">
+        <!-- AUTHENTICATION SCREEN -->
+        <div id="auth-screen" class="card">
+            <h2>Student Portal Login</h2>
+            <p style="color: #6b7280; font-size: 14px; margin-bottom: 10px;">Sign in to access your dashboard</p>
+            <input type="text" id="username" placeholder="Student ID (e.g., STU001)">
+            <input type="password" id="password" placeholder="Password">
+            <button onclick="handleLogin()">Login</button>
+            <div id="login-error" style="color: red; margin-top: 10px; font-size: 14px;"></div>
+        </div>
 
-        <!-- SECTION 2: PERIOD LOG & STUDENT ATTENDANCE -->
-        <section class="p-4 bg-slate-50 rounded-lg border border-slate-200">
-            <h3 class="text-lg font-bold text-slate-900 mb-4">Period & Student Attendance Report</h3>
-            <form id="period-form" onsubmit="handlePeriodSubmit(event)" class="space-y-4">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-semibold mb-1">Select Period</label>
-                        <select id="period-select" required class="w-full p-2 bg-white border border-slate-300 rounded">
-                            <option value="">-- Choose Period --</option>
-                            <option value="Period 1">Period 1</option>
-                            <option value="Period 2">Period 2</option>
-                            <option value="Period 3">Period 3</option>
-                            <option value="Period 4">Period 4</option>
-                            <option value="Period 5">Period 5</option>
-                            <option value="Period 6">Period 6</option>
-                            <option value="Period 7">Period 7</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold mb-1">Student Attendance Status</label>
-                        <input type="text" id="student-attendance" placeholder="e.g., All Present OR Absentees: Roll 12, 14" required 
-                               class="w-full p-2 bg-white border border-slate-300 rounded">
-                    </div>
-                </div>
+        <!-- MAIN DASHBOARD SCREEN -->
+        <div id="dashboard">
+            <div class="card header">
                 <div>
-                    <label class="block text-sm font-semibold mb-1">Topic / Activity Report</label>
-                    <textarea id="topic-report" rows="3" placeholder="Briefly detail what was taught or accomplished..." required 
-                              class="w-full p-2 bg-white border border-slate-300 rounded"></textarea>
+                    <h1 id="welcome-name">Welcome, Student</h1>
+                    <p style="color: #6b7280; font-size: 14px;">ID: <span id="display-id"></span> | Class: <span id="display-class"></span></p>
                 </div>
-                <button type="submit" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-medium py-2.5 rounded transition">
-                    Submit Period Log
-                </button>
-            </form>
-        </section>
+                <button class="logout-btn" onclick="handleLogout()">Logout</button>
+            </div>
+
+            <!-- ATTENDANCE & PROGRESS OVERVIEW -->
+            <div class="card">
+                <h3>Attendance & General Progress</h3>
+                <div class="profile-summary" id="attendance-summary">
+                    <!-- Loaded via JS -->
+                </div>
+            </div>
+
+            <div class="dashboard-grid">
+                <!-- MARK LIST CARD -->
+                <div class="card">
+                    <h3>Exam Mark Lists</h3>
+                    <div id="marks-container">No records found.</div>
+                </div>
+
+                <!-- HOMEWORK CARD -->
+                <div class="card">
+                    <h3>Homework & Assignments</h3>
+                    <div id="homework-container">No active homework assigned.</div>
+                </div>
+            </div>
+
+            <div class="dashboard-grid" style="margin-top: 20px;">
+                <!-- GENERAL FEES CARD -->
+                <div class="card">
+                    <h3>General Fee Status</h3>
+                    <div id="fees-container">No fee data found.</div>
+                </div>
+
+                <!-- VEHICLE FEES CARD -->
+                <div class="card">
+                    <h3>Vehicle Fee Status</h3>
+                    <div id="vehicle-fees-container">No vehicle route data found.</div>
+                </div>
+            </div>
+
+            <!-- COMMUNICATIONS / ACTIONS CARD -->
+            <div class="card" style="margin-top: 20px;">
+                <h3>Administrative Desk Requests</h3>
+                <p style="color: #6b7280; font-size: 13px; margin-bottom: 15px;">Send leave notifications or general suggestions directly to management via WhatsApp or Email.</p>
+                
+                <div class="action-container">
+                    <!-- Suggestion Box -->
+                    <div class="action-card">
+                        <h4>Submit Suggestions</h4>
+                        <textarea id="suggestion-text" rows="3" placeholder="Type your ideas or suggestions here..."></textarea>
+                        <div class="btn-group">
+                            <button class="btn-wa" onclick="sendCommunication('suggestion', 'wa')">WhatsApp</button>
+                            <button class="btn-mail" onclick="sendCommunication('suggestion', 'mail')">Email</button>
+                        </div>
+                    </div>
+
+                    <!-- Leave Box -->
+                    <div class="action-card">
+                        <h4>Apply for Leave</h4>
+                        <textarea id="leave-text" rows="3" placeholder="Specify dates and reason for absence..."></textarea>
+                        <div class="btn-group">
+                            <button class="btn-wa" onclick="sendCommunication('leave', 'wa')">WhatsApp</button>
+                            <button class="btn-mail" onclick="sendCommunication('leave', 'mail')">Email</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- CORE INTERACTION JAVASCRIPT -->
     <script>
-        // Handle User Verification
-        async function handleLogin(e) {
-            e.preventDefault();
-            const idInput = document.getElementById("username").value.trim();
-            const passwordInput = document.getElementById("password").value;
-            const errorElement = document.getElementById("login-error");
+        // REPLACE THIS STRING WITH YOUR DEPLOYED GOOGLE APPS SCRIPT WEB APP URL
+        const API_URL = "https://script.google.com/macros/s/AKfycbykzJKHqMrceEbGMACyt3PfuwUZFSfd8lUIZ4Kp4KLtjRIm7urchufipSYUVg_bLKHOwQ/exec";
 
-            errorElement.classList.add("hidden");
+        let currentStudent = null;
+
+        async function handleLogin() {
+            const user = document.getElementById('username').value.trim();
+            const pass = document.getElementById('password').value.trim();
+            const errDiv = document.getElementById('login-error');
+            errDiv.innerText = "";
+
+            if(!user || !pass) {
+                errDiv.innerText = "Please complete both credentials fields.";
+                return;
+            }
 
             try {
                 const response = await fetch(API_URL, {
-                    method: "POST",
-                    mode: "no-cors", // Bypass browser CORS pre-flight restrictions safely
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        action: "login",
-                        username: idInput,
-                        password: passwordInput
+                    method: 'POST',
+                    mode: 'cors',
+                    headers: { 'Content-Type': 'text/plain' }, // Avoid CORS options flight triggers where possible
+                    body: JSON.stringify({ action: 'login', username: user, password: pass })
+                });
+                const result = await response.json();
+
+                if(result.success) {
+                    currentStudent = result;
+                    document.getElementById('auth-screen').style.display = 'none';
+                    document.getElementById('dashboard').style.display = 'block';
+                    
+                    document.getElementById('welcome-name').innerText = `Welcome, ${result.studentName}`;
+                    document.getElementById('display-id').innerText = result.studentId;
+                    document.getElementById('display-class').innerText = result.studentClass;
+                    
+                    fetchDashboardData();
+                } else {
+                    errDiv.innerText = result.message;
+                }
+            } catch (err) {
+                errDiv.innerText = "Connection to server failed. Verify API URL configurations.";
+                console.error(err);
+            }
+        }
+
+        async function fetchDashboardData() {
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ 
+                        action: 'fetchData', 
+                        studentId: currentStudent.studentId, 
+                        studentClass: currentStudent.studentClass 
                     })
                 });
-
-                // Since 'no-cors' treats responses opaquely, we fallback to simple client-side rendering state 
-                // Alternatively, standard REST validation requires JSON response handling:
-                setupPortal(idInput, "Verified Instructor");
-                
-            } catch (err) {
-                errorElement.innerText = "Connection error. Please try again.";
-                errorElement.classList.remove("hidden");
+                const res = await response.json();
+                if(res.success) {
+                    renderDashboard(res.data);
+                }
+            } catch(e) {
+                console.error("Failed fetching dashboard collections details:", e);
             }
         }
 
-        function setupPortal(id, name) {
-            currentTeacher.id = id;
-            currentTeacher.name = name;
+        function renderDashboard(data) {
+            // 1. Render Attendance Summary
+            const attContainer = document.getElementById('attendance-summary');
+            if(data.attendance && data.attendance.length > 0) {
+                const att = data.attendance[0];
+                attContainer.innerHTML = `
+                    <div class="summary-box"><h4>Month Record</h4><p>${att.Month}</p></div>
+                    <div class="summary-box"><h4>Attendance</h4><p>${att.PresentDays} / ${att.WorkingDays} Days</p></div>
+                    <div class="summary-box"><h4>Percentage Ratio</h4><p>${att.Percentage}</p></div>
+                    <div class="summary-box" style="grid-column: span 2; text-align: left;"><h4>Progress Appraisal Remarks</h4><p style="font-size:14px; font-weight:normal; color:#4b5563;">${att.ProgressRemarks}</p></div>
+                `;
+            } else {
+                attContainer.innerHTML = `<p>No recent metric files parsed.</p>`;
+            }
 
-            document.getElementById("teacher-id-display").innerText = id;
-            document.getElementById("teacher-name-display").innerText = name;
-
-            document.getElementById("login-screen").classList.add("hidden");
-            document.getElementById("portal-screen").classList.remove("hidden");
-        }
-
-        // Submit Shift Attendance (Arrival/Leaving)
-        async function submitShiftAttendance(type) {
-            const payload = {
-                action: "teacher_attendance",
-                date: getTodayDate(),
-                teacherId: currentTeacher.id,
-                teacherName: currentTeacher.name,
-                type: type
-            };
-
-            await sendData(payload, `Successfully marked ${type}!`);
-        }
-
-        // Submit Period Report
-        async function handlePeriodSubmit(e) {
-            e.preventDefault();
-            const payload = {
-                action: "period_report",
-                date: getTodayDate(),
-                teacherId: currentTeacher.id,
-                period: document.getElementById("period-select").value,
-                studentAttendance: document.getElementById("student-attendance").value,
-                topicReport: document.getElementById("topic-report").value
-            };
-
-            await sendData(payload, "Period log submitted successfully!");
-            document.getElementById("period-form").reset();
-        }
-
-        // Shared networking worker
-        async function sendData(payload, successMessage) {
-            try {
-                await fetch(API_URL, {
-                    method: "POST",
-                    mode: "no-cors",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload)
+            // 2. Render Marks dynamically (Supports single/multiple items)
+            const marksContainer = document.getElementById('marks-container');
+            if(data.marks && data.marks.length > 0) {
+                // Group items by Exam Type
+                let grouped = {};
+                data.marks.forEach(item => {
+                    if(!grouped[item.ExamName]) grouped[item.ExamName] = [];
+                    grouped[item.ExamName].push(item);
                 });
-                alert(successMessage);
-            } catch (error) {
-                alert("Network submission failed. Verify spreadsheet backend permissions.");
+
+                let html = "";
+                for(let exam in grouped) {
+                    html += `<div style="margin-bottom: 15px;"><h4 style="color:#4b5563; margin-bottom:5px;">${exam}</h4><table>
+                            <thead><tr><th>Subject</th><th>Score</th><th>Max</th></tr></thead><tbody>`;
+                    grouped[exam].forEach(m => {
+                        html += `<tr><td>${m.Subject}</td><td><b>${m.MarksObtained}</b></td><td>${m.MaxMarks}</td></tr>`;
+                    });
+                    html += `</tbody></table></div>`;
+                }
+                marksContainer.innerHTML = html;
+            } else {
+                marksContainer.innerHTML = "No grade metrics matched.";
+            }
+
+            // 3. Render Homework
+            const hwContainer = document.getElementById('homework-container');
+            if(data.homework && data.homework.length > 0) {
+                let html = `<table><thead><tr><th>Subject</th><th>Assignment Task Details</th><th>Due</th><th>State</th></tr></thead><tbody>`;
+                data.homework.forEach(hw => {
+                    let badgeClass = hw.Status.toLowerCase() === 'completed' ? 'completed' : 'pending';
+                    html += `<tr>
+                        <td><b>${hw.Subject}</b></td>
+                        <td>${hw.HomeworkDetails}</td>
+                        <td>${hw.Deadline.split('T')[0]}</td>
+                        <td><span class="badge ${badgeClass}">${hw.Status}</span></td>
+                    </tr>`;
+                });
+                html += `</tbody></table>`;
+                hwContainer.innerHTML = html;
+            } else {
+                hwContainer.innerHTML = "No assignments synchronized.";
+            }
+
+            // 4. Render Fees Status
+            const feesContainer = document.getElementById('fees-container');
+            if(data.fees && data.fees.length > 0) {
+                let html = `<table><thead><tr><th>Purpose/Allocation</th><th>Amount</th><th>Receipt ID</th><th>State</th></tr></thead><tbody>`;
+                data.fees.forEach(f => {
+                    let badgeClass = f.Status.toLowerCase() === 'paid' ? 'paid' : 'pending';
+                    html += `<tr>
+                        <td>${f.Purpose}</td>
+                        <td>₹${f.Amount}</td>
+                        <td><code>${f.ReceiptNumber || '-'}</code></td>
+                        <td><span class="badge ${badgeClass}">${f.Status}</span></td>
+                    </tr>`;
+                });
+                html += `</tbody></table>`;
+                feesContainer.innerHTML = html;
+            } else {
+                feesContainer.innerHTML = "Clear structural records found.";
+            }
+
+            // 5. Render Vehicle Fees
+            const vFeesContainer = document.getElementById('vehicle-fees-container');
+            if(data.vehicleFees && data.vehicleFees.length > 0) {
+                let html = `<table><thead><tr><th>Billing Month</th><th>Fare Cost</th><th>Receipt ID</th><th>State</th></tr></thead><tbody>`;
+                data.vehicleFees.forEach(vf => {
+                    let badgeClass = vf.Status.toLowerCase() === 'paid' ? 'paid' : 'pending';
+                    html += `<tr>
+                        <td>${vf.Month}</td>
+                        <td>₹${vf.Amount}</td>
+                        <td><code>${vf.ReceiptNumber || '-'}</code></td>
+                        <td><span class="badge ${badgeClass}">${vf.Status}</span></td>
+                    </tr>`;
+                });
+                html += `</tbody></table>`;
+                vFeesContainer.innerHTML = html;
+            } else {
+                vFeesContainer.innerHTML = "No transit profiles mapped.";
             }
         }
 
-        function logout() {
-            currentTeacher = { id: "", name: "" };
-            document.getElementById("login-form").reset();
-            document.getElementById("portal-screen").classList.add("hidden");
-            document.getElementById("login-screen").classList.remove("hidden");
+        function sendCommunication(type, platform) {
+            const msgBody = type === 'suggestion' ? document.getElementById('suggestion-text').value : document.getElementById('leave-text').value;
+            if(!msgBody.trim()) {
+                alert("Please type a message before executing redirection.");
+                return;
+            }
+
+            const prefix = type === 'suggestion' ? "[SUGGESTION PORTAL]" : "[LEAVE REQUEST APPLICATION]";
+            const fullMessage = `${prefix}\nStudent: ${currentStudent.studentName} (ID: ${currentStudent.studentId})\nClass: ${currentStudent.studentClass}\n\nMessage:\n${msgBody}`;
+            
+            if(platform === 'wa') {
+                const waUrl = `https://wa.me/917902786576?text=${encodeURIComponent(fullMessage)}`;
+                window.open(waUrl, '_blank');
+            } else if(platform === 'mail') {
+                const mailUrl = `mailto:rahmaniyyaakm@gmail.com?subject=${encodeURIComponent(prefix + ' - ' + currentStudent.studentName)}&body=${encodeURIComponent(fullMessage)}`;
+                window.location.href = mailUrl;
+            }
+        }
+
+        function handleLogout() {
+            currentStudent = null;
+            document.getElementById('username').value = "";
+            document.getElementById('password').value = "";
+            document.getElementById('dashboard').style.display = 'none';
+            document.getElementById('auth-screen').style.display = 'block';
         }
     </script>
 </body>
