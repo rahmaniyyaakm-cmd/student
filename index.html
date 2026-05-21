@@ -178,8 +178,10 @@
             try {
                 const response = await fetch(API_URL, {
                     method: 'POST',
-                    mode: 'cors',
-                    headers: { 'Content-Type': 'text/plain' }, // Avoid CORS options flight triggers where possible
+                        
+                    headers: {
+    'Content-Type': 'application/json'
+}, // Avoid CORS options flight triggers where possible
                     body: JSON.stringify({ action: 'login', username: user, password: pass })
                 });
                 const result = await response.json();
