@@ -127,7 +127,31 @@
                     <div id="vehicle-fees-container">No vehicle route data found.</div>
                 </div>
             </div>
+<div class="card" style="margin-top:20px;">
+    <h3>Islamic Activities</h3>
 
+    <div id="islamic-summary"></div>
+
+    <hr style="margin:15px 0;">
+
+    <h4>Today's Marking</h4>
+
+    <label><input type="checkbox" id="subh"> Subh</label><br>
+    <label><input type="checkbox" id="zuhr"> Zuhr</label><br>
+    <label><input type="checkbox" id="asar"> Asar</label><br>
+    <label><input type="checkbox" id="maghrib"> Maghrib</label><br>
+    <label><input type="checkbox" id="isha"> Isha</label><br>
+
+    <br>
+
+    <input type="number"
+           id="quranCount"
+           placeholder="Quran Recitations">
+
+    <button onclick="saveIslamicStatus()">
+      Save Islamic Status
+    </button>
+</div>
             <!-- COMMUNICATIONS / ACTIONS CARD -->
             <div class="card" style="margin-top: 20px;">
                 <h3>Administrative Desk Requests</h3>
@@ -228,6 +252,7 @@
         }
 
         function renderDashboard(data) {
+            
             // 1. Render Attendance Summary
             const attContainer = document.getElementById('attendance-summary');
             if(data.attendance && data.attendance.length > 0) {
@@ -240,6 +265,64 @@
                 `;
             } else {
                 attContainer.innerHTML = `<p>No recent metric files parsed.</p>`;
+            renderIslamic(data.islamic);
+                function renderIslamic(records){
+
+  if(!records || records.length === 0){
+    document.getElementById('islamic-summary').innerHTML =
+      "No Islamic data found";
+    return;
+  }
+
+  let subh=0,zuhr=0,asar=0,maghrib=0,isha=0,quran=0;
+
+  records.forEach(r=>{
+
+    if(r.Subh==="Yes") subh++;
+    if(r.Zuhr==="Yes") zuhr++;
+    if(r.Asar==="Yes") asar++;
+    if(r.Maghrib==="Yes") maghrib++;
+    if(r.Isha==="Yes") isha++;
+
+    quran += Number(r.QuranCount || 0);
+  });
+
+  document.getElementById('islamic-summary').innerHTML = `
+    <div class="profile-summary">
+
+      <div class="summary-box">
+        <h4>Subh</h4>
+        <p>${subh}</p>
+      </div>
+
+      <div class="summary-box">
+        <h4>Zuhr</h4>
+        <p>${zuhr}</p>
+      </div>
+
+      <div class="summary-box">
+        <h4>Asar</h4>
+        <p>${asar}</p>
+      </div>
+
+      <div class="summary-box">
+        <h4>Maghrib</h4>
+        <p>${maghrib}</p>
+      </div>
+
+      <div class="summary-box">
+        <h4>Isha</h4>
+        <p>${isha}</p>
+      </div>
+
+      <div class="summary-box">
+        <h4>Quran</h4>
+        <p>${quran}</p>
+      </div>
+
+    </div>
+  `;
+}
             }
 
             // 2. Render Marks dynamically (Supports single/multiple items)
@@ -342,6 +425,32 @@
                 window.location.href = mailUrl;
             }
         }
+        async function saveIslamicStatus(){
+
+  const today = new Date().toISOString().split('T')[0];
+
+  const response = await fetch(API_URL,{
+    method:'POST',
+    headers:{
+      'Content-Type':'text/plain;charset=utf-8'
+    },
+    body:JSON.stringify({
+      action:'saveIslamic',
+      studentId:currentStudent.studentId,
+      date:today,
+      subh:document.getElementById('subh').checked ? 'Yes':'No',
+      zuhr:document.getElementById('zuhr').checked ? 'Yes':'No',
+      asar:document.getElementById('asar').checked ? 'Yes':'No',
+      maghrib:document.getElementById('maghrib').checked ? 'Yes':'No',
+      isha:document.getElementById('isha').checked ? 'Yes':'No',
+      quranCount:document.getElementById('quranCount').value || 0
+    })
+  });
+
+  const result = await response.json();
+
+  alert(result.message || "Saved Successfully");
+}
 
         function handleLogout() {
             currentStudent = null;
