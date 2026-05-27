@@ -127,7 +127,52 @@
                     <div id="vehicle-fees-container">No vehicle route data found.</div>
                 </div>
             </div>
+<!-- ISLAMIC TRACKER -->
+<div class="card" style="margin-top:20px;">
 
+    <h3>Islamic Daily Tracker</h3>
+
+    <div class="profile-summary">
+
+        <div class="summary-box">
+            <h4>🔥 Streak</h4>
+            <p id="stat-streak">0</p>
+        </div>
+
+        <div class="summary-box">
+            <h4>🕌 Namaz</h4>
+            <p id="stat-namaz">0%</p>
+        </div>
+
+        <div class="summary-box">
+            <h4>📖 Quran</h4>
+            <p id="stat-quran">0</p>
+        </div>
+
+    </div>
+
+    <div style="margin-top:20px;">
+
+        <label><input type="checkbox" id="check-subh"> Subh</label><br><br>
+
+        <label><input type="checkbox" id="check-zuhr"> Zuhr</label><br><br>
+
+        <label><input type="checkbox" id="check-asar"> Asar</label><br><br>
+
+        <label><input type="checkbox" id="check-maghrib"> Maghrib</label><br><br>
+
+        <label><input type="checkbox" id="check-isha"> Isha</label><br><br>
+
+        <input type="number" id="input-quran" placeholder="Quran Pages">
+
+        <br><br>
+
+        <button onclick="submitDailyPerformance()">
+            Save Islamic Progress
+        </button>
+
+    </div>
+</div>
             <!-- COMMUNICATIONS / ACTIONS CARD -->
             <div class="card" style="margin-top: 20px;">
                 <h3>Administrative Desk Requests</h3>
@@ -196,6 +241,7 @@
                     document.getElementById('display-class').innerText = result.studentClass;
                     
                     fetchDashboardData();
+fetchIslamicDashboard();
                 } else {
                     errDiv.innerText = result.message;
                 }
@@ -342,7 +388,70 @@
                 window.location.href = mailUrl;
             }
         }
+async function submitDailyPerformance() {
 
+    const subh = document.getElementById('check-subh').checked;
+    const zuhr = document.getElementById('check-zuhr').checked;
+    const asar = document.getElementById('check-asar').checked;
+    const maghrib = document.getElementById('check-maghrib').checked;
+    const isha = document.getElementById('check-isha').checked;
+
+    const quran_pages =
+        document.getElementById('input-quran').value || 0;
+
+    const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'text/plain;charset=utf-8',
+        },
+        body: JSON.stringify({
+            action: 'submitDaily',
+            student_id: currentStudent.studentId,
+            subh,
+            zuhr,
+            asar,
+            maghrib,
+            isha,
+            quran_pages
+        })
+    });
+
+    const res = await response.json();
+
+    if(res.success) {
+        alert("Islamic progress saved!");
+        fetchIslamicDashboard();
+    }
+}
+
+
+async function fetchIslamicDashboard() {
+
+    const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'text/plain;charset=utf-8',
+        },
+        body: JSON.stringify({
+            action: 'getDashboardData',
+            student_id: currentStudent.studentId
+        })
+    });
+
+    const data = await response.json();
+
+    if(data.success) {
+
+        document.getElementById('stat-streak').innerText =
+            data.streak;
+
+        document.getElementById('stat-namaz').innerText =
+            data.completionRate + "%";
+
+        document.getElementById('stat-quran').innerText =
+            data.quranPages;
+    }
+}
         function handleLogout() {
             currentStudent = null;
             document.getElementById('username').value = "";
