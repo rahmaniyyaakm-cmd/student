@@ -417,7 +417,8 @@ async function submitDailyPerformance() {
     });
 
     const res = await response.json();
-
+    console.log(res);
+    alert(JSON.stringify(res));
     if(res.success) {
         alert("Islamic progress saved!");
         fetchIslamicDashboard();
